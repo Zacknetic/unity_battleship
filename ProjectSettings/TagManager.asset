@@ -6,8 +6,8 @@ TagManager:
   tags:
   - attackSelection
   - shipSelector
-  - ignoreLogic
   - shipSelectorIgnore
+  - renderedShip
   layers:
   - Default
   - TransparentFX

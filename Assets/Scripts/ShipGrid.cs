@@ -21,7 +21,7 @@ public class ShipGrid : MonoBehaviour
     public Material normalMat;
     public Material originalMat;
     //create a 2d array of ints with a size of rows and cols
-    private int[,] shipGrid;
+    private ShipGridCell[,] shipGrid;
 
     //     int[,] shipGrid = new int[,]
     // {
@@ -38,21 +38,18 @@ public class ShipGrid : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        Debug.Log("ShipGrid Start");
 
+        storeRenderShipMaterial();
         InitializeGridSize();
         InitializeMatrixValue();
-        DisplayGrid();
-        Debug.Log("ShipGrid End");
-        //set the child with the tag "renderedShip" to the incorrect material
+        UpdateWorldPosition();
+        MarkShipOnGameGrid();
 
-        //call the function after 1 second
-        Invoke("setRenderShipMaterial", 1);
-        Invoke("resetRenderShipMaterial", 2);
     }
 
     void HandleMouseDown(GameObject child)
     {
+        hasValidPosition = true;
         initialMousePosition = Input.mousePosition;
         mouseDownTime = Time.time;
         screenPoint = Camera.main.WorldToScreenPoint(gameObject.transform.position);
@@ -74,7 +71,7 @@ public class ShipGrid : MonoBehaviour
         }
     }
 
-    void setRenderShipMaterial()
+    public void storeRenderShipMaterial()
     {
         foreach (Transform child in this.transform)
         {
@@ -84,13 +81,28 @@ public class ShipGrid : MonoBehaviour
                 foreach (Transform childShip in child.transform)
                 {
                     originalMat = childShip.GetComponent<Renderer>().material;
-                    childShip.GetComponent<Renderer>().material = incorrectMat;
                 }
             }
         }
     }
 
-    void resetRenderShipMaterial()
+    public void manageInvalidShipPosition()
+    {
+        foreach (Transform child in this.transform)
+        {
+            if (child.tag == "renderedShip")
+            {
+                //get the child's child and set the material to the incorrect material
+                foreach (Transform childShip in child.transform)
+                {
+                    childShip.GetComponent<Renderer>().material = incorrectMat;
+                    hasValidPosition = false;
+                }
+            }
+        }
+    }
+
+    public void resetRenderShipMaterial()
     {
         foreach (Transform child in this.transform)
         {
@@ -105,31 +117,6 @@ public class ShipGrid : MonoBehaviour
     }
 
     //test if the ship is overlapping with another ship or if it is off the grid
-    void isValidPosition()
-    {
-        int[,] gameGrid = FindObjectOfType<GridManager>().getGameGrid();
-
-        foreach (Transform child in this.transform)
-        {
-            if (child.tag == "shipSelector")
-            {
-                int 
-
-            }
-        }
-        //check if the ship is off the grid
-        if (this.worldPosition.x < 0 || this.worldPosition.x > 10 || this.worldPosition.y < 0 || this.worldPosition.y > 10)
-        {
-            Debug.Log("ship is off the grid");
-        }
-        //check if the ship is overlapping with another ship
-        else if (this.shipGrid[(int)this.worldPosition.y, (int)this.worldPosition.x] == 1)
-        {
-            Debug.Log("ship is overlapping with another ship");
-            this.hasValidPosition = false;
-        }
-
-    }
 
     void Update()
     {
@@ -141,17 +128,7 @@ public class ShipGrid : MonoBehaviour
 
     void HandleMouseUp(GameObject child)
     {
-        //animate the material color for each child from blue to white back to blue
-        foreach (Transform childShip in this.transform)
-        {
-            if (childShip.tag != "invisBox")
-            {
-                //slowly transform from one material to another
-                // childShip.GetComponent<Renderer>().material.Lerp(childShip.GetComponent<Renderer>().material, selectedMat, 0.5f);
-                // childShip.GetComponent<Renderer>().material.Lerp(childShip.GetComponent<Renderer>().material, normalMat, 0.5f);
 
-            }
-        }
 
         if (!isDragging && Time.time - mouseDownTime <= clickDurationThreshold)
         {
@@ -181,6 +158,7 @@ public class ShipGrid : MonoBehaviour
         UpdateWorldPosition();
         MarkShipOnGameGrid();
     }
+
     void InitializeGridSize()
     {
         int row = 0;
@@ -200,7 +178,7 @@ public class ShipGrid : MonoBehaviour
         cols = col;
         Debug.Log("rows: " + rows);
         Debug.Log("cols: " + cols);
-        this.shipGrid = new int[row, col];
+        this.shipGrid = new ShipGridCell[row, col];
 
     }
 
@@ -211,18 +189,17 @@ public class ShipGrid : MonoBehaviour
         {
 
             //if the childShip has a tag of "invisBox" then we should mark it as 0
-
+            ShipGridCell cell = child.GetComponent<ShipGridCell>();
             if (child.tag == "shipSelector")
             {
-                shipGrid[(int)child.localPosition.y + 2, (int)child.localPosition.x + 2] = 1;
+                shipGrid[(int)child.localPosition.y + 2, (int)child.localPosition.x + 2] = cell;
             }
             else if (child.tag == "shipSelectorIgnore")
             {
-                shipGrid[(int)child.localPosition.y + 2, (int)child.localPosition.x + 2] = 0;
+                shipGrid[(int)child.localPosition.y + 2, (int)child.localPosition.x + 2] = null;
             }
 
 
-            ShipGridCell cell = child.GetComponent<ShipGridCell>();
 
             if (cell != null)
             {
@@ -233,18 +210,12 @@ public class ShipGrid : MonoBehaviour
         }
     }
 
-
-    void DisplayGrid()
-    {
-        GridManager.DisplayGrid(shipGrid, rows, cols);
-    }
-
     public void RotateAll()
     {
         Debug.Log("Rotating All");
         RotateParent();
         RotateMatrix();
-        DisplayGrid();
+        // DisplayGrid();
 
     }
     //to rotate the matrix 90 degrees clockwise use this. Keep in mind, we need to account for a non-square matrix.
@@ -252,7 +223,7 @@ public class ShipGrid : MonoBehaviour
     {
         int originalRows = shipGrid.GetLength(0);
         int originalCols = shipGrid.GetLength(1);
-        int[,] rotated = new int[originalCols, originalRows];
+        ShipGridCell[,] rotated = new ShipGridCell[originalCols, originalRows];
 
         for (int i = 0; i < originalRows; i++)
         {
@@ -280,6 +251,11 @@ public class ShipGrid : MonoBehaviour
 
     void MarkShipOnGameGrid()
     {
+        if (hasValidPosition)
+        {
+            resetRenderShipMaterial();
+        }
+
         GridManager gridManager = FindObjectOfType<GridManager>();
         if (gridManager != null)
         {
@@ -319,12 +295,17 @@ public class ShipGrid : MonoBehaviour
         this.worldPosition.y = y;
     }
 
+    public bool GetHasValidPosition()
+    {
+        return this.hasValidPosition;
+    }
+
     internal Vector2 GetWorldPosition()
     {
         return this.worldPosition;
     }
 
-    internal int[,] GetGridMatrix()
+    internal ShipGridCell[,] GetShipGridMatrix()
     {
         return this.shipGrid;
     }
