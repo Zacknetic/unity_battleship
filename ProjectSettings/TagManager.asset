@@ -5,6 +5,9 @@ TagManager:
   serializedVersion: 2
   tags:
   - attackSelection
+  - shipSelector
+  - ignoreLogic
+  - shipSelectorIgnore
   layers:
   - Default
   - TransparentFX

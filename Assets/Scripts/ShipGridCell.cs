@@ -7,8 +7,6 @@ public class ShipGridCell : MonoBehaviour
     public event MouseEventDelegate OnMouseUpEvent;
     public event MouseEventDelegate OnMouseDragEvent;
 
-    public bool isAttackable = false;
-
     void OnMouseDown()
     {
         // Debug.Log("OnMouseDown");
